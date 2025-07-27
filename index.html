@@ -110,7 +110,7 @@
   <audio id="explosionSound" src="explosion.mp3" preload="auto"></audio>
 
   <script>
-     const video = document.getElementById('characterVideo');
+    const video = document.getElementById('characterVideo');
     const allSounds = [
   document.getElementById('slapSound1'),
   document.getElementById('slapSound2'),
@@ -120,7 +120,7 @@
   document.getElementById('reloadSound'),
   document.getElementById('explosionSound')
 ];
-const globalVolume = 0.4;
+const globalVolume = 0.5;
 
 allSounds.forEach(audio => {
   audio.volume = globalVolume;
