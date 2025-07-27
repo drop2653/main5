@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>페일 괴롭히기</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background-color: #fafafa;
+      margin: 0;
+      position: relative;
+    }
+
+    h1 {
+      font-size: 32px;
+      margin-bottom: 16px;
+      color: #333;
+    }
+
+    video {
+      width: 320px;
+      cursor: pointer;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .health-bar {
+      margin-top: 16px;
+      display: flex;
+      gap: 4px;
+    }
+
+    .health-unit {
+      width: 20px;
+      height: 20px;
+      background-color: #4caf50;
+      border-radius: 4px;
+      transition: background-color 0.2s;
+    }
+
+    .health-unit.empty {
+      background-color: #ddd;
+    }
+
+    .effect {
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      pointer-events: none;
+      animation: fadeOut 0.6s forwards;
+      transform: translate(-50%, -50%);
+      opacity: 1;
+    }
+    @keyframes spinAndFlyAway {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(500px, -600px) rotate(1080deg) scale(0.3);
+    opacity: 0;
+  }
+}
+
+.video-flyaway {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation: spinAndFlyAway 1.2s forwards ease-in;
+  z-index: 2;
+}
+
+    @keyframes fadeOut {
+      0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(1.6);
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>페일 괴롭히기</h1>
+
+  <video id="characterVideo" preload="auto" playsinline muted>
+    <source src="normaling.mp4" type="video/mp4">
+    브라우저가 비디오를 지원하지 않습니다.
+  </video>
+
+  <div class="health-bar" id="healthBar"></div>
+
+  <!-- 사운드 -->
+  <audio id="slapSound1" src="slap1.mp3" preload="auto"></audio>
+  <audio id="slapSound2" src="slap2.mp3" preload="auto"></audio>
+  <audio id="slapSound3" src="slap3.mp3" preload="auto"></audio>
+  <audio id="slapSound4" src="slap4.mp3" preload="auto"></audio>
+  <audio id="slapSound5" src="slap5.mp3" preload="auto"></audio>
+  <audio id="reloadSound" src="reload.mp3" preload="auto"></audio>
+  <audio id="explosionSound" src="explosion.mp3" preload="auto"></audio>
+
+  <script>
+    const video = document.getElementById('characterVideo');
+    const healthBar = document.getElementById('healthBar');
+    const slapSounds = [
+      document.getElementById('slapSound1'),
+      document.getElementById('slapSound2'),
+      document.getElementById('slapSound3'),
+      document.getElementById('slapSound4'),
+      document.getElementById('slapSound5')
+    ];
+
+    const reloadSound = document.getElementById('reloadSound');
+    const explosionSound = document.getElementById('explosionSound');
+    const splatImages = ['shine1.png', 'shine2.png'];
+
+    let maxHealth = 10;
+    let currentHealth = maxHealth;
+    let isRecovering = false;
+    let damageStartTime = null;
+
+    function renderHealth() {
+      healthBar.innerHTML = '';
+      for (let i = 0; i < maxHealth; i++) {
+        const unit = document.createElement('div');
+        unit.classList.add('health-unit');
+        if (i >= currentHealth) unit.classList.add('empty');
+        healthBar.appendChild(unit);
+      }
+    }
+
+    renderHealth();
+
+    video.addEventListener('click', (e) => {
+      if (isRecovering) return;
+
+      if (currentHealth === maxHealth) {
+        damageStartTime = Date.now(); // 최초 공격 시간 기록
+      }
+
+      video.currentTime = 0;
+      video.play();
+
+      currentHealth--;
+      renderHealth();
+
+      const randomSound = slapSounds[Math.floor(Math.random() * slapSounds.length)];
+      randomSound.currentTime = 0;
+      randomSound.play();
+
+      showEffect(e.clientX, e.clientY);
+
+      if (currentHealth <= 0) {
+        const elapsed = Date.now() - damageStartTime;
+        const instantKill = elapsed <= 1000;
+        startRecovery(instantKill);
+      }
+    });
+
+    function showEffect(x, y) {
+      const effect = document.createElement('img');
+      const randomImage = splatImages[Math.floor(Math.random() * splatImages.length)];
+      effect.src = randomImage;
+      effect.className = 'effect';
+      effect.style.left = `${x}px`;
+      effect.style.top = `${y}px`;
+      document.body.appendChild(effect);
+      setTimeout(() => effect.remove(), 600);
+    }
+
+   function startRecovery(isInstantKill) {
+  isRecovering = true;
+
+  if (isInstantKill) {
+    explosionSound.currentTime = 0;
+    explosionSound.play();
+
+    // 기존 비디오 날아가게 처리
+    video.classList.add('video-flyaway');
+
+    // 새 비디오 요소 생성
+    const newVideo = document.createElement('video');
+    newVideo.id = 'characterVideo';
+    newVideo.preload = 'auto';
+    newVideo.playsInline = true;
+    newVideo.muted = true;
+    newVideo.autoplay = true;
+    newVideo.loop = false;
+    newVideo.style.width = '320px';
+    newVideo.style.borderRadius = '12px';
+    newVideo.style.boxShadow = '0 4px 10px rgba(0, 0, 0, 0.2)';
+    
+    const source = document.createElement('source');
+    source.src = 'oh.mp4';
+    source.type = 'video/mp4';
+    newVideo.appendChild(source);
+
+    setTimeout(() => {
+      video.remove(); // 기존 영상 제거
+      document.body.insertBefore(newVideo, healthBar); // 새 영상 삽입
+
+      setTimeout(() => {
+        showGameOverButton();
+      }, 1000); // 약간의 여유 후 버튼 표시
+    }, 1200); // 날아가는 애니 끝날 때쯤 교체
+  } else {
+    reloadSound.currentTime = 0;
+    reloadSound.play();
+
+    const videoSource = video.querySelector('source');
+    video.loop = true;
+    videoSource.src = 'slaping.mp4';
+    video.load();
+    video.play();
+
+    setTimeout(() => {
+      currentHealth = maxHealth;
+      renderHealth();
+
+      video.loop = false;
+      videoSource.src = 'normaling.mp4';
+      video.load();
+      video.pause();
+
+      isRecovering = false;
+    }, 1000);
+  }
+}
+
+    function showGameOverButton() {
+      const button = document.createElement('button');
+      button.textContent = '게임 종료';
+      button.style.marginTop = '24px';
+      button.style.padding = '12px 24px';
+      button.style.fontSize = '16px';
+      button.style.borderRadius = '8px';
+      button.style.border = 'none';
+      button.style.backgroundColor = '#ff4444';
+      button.style.color = '#fff';
+      button.style.cursor = 'pointer';
+      document.body.appendChild(button);
+
+      button.addEventListener('click', () => {
+        location.reload();
+      });
+    }
+
+    video.addEventListener('ended', () => {
+      if (!isRecovering) {
+        video.currentTime = 0;
+        video.pause();
+      }
+    });
+  </script>
+</body>
+</html>
